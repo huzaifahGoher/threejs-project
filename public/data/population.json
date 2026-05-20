@@ -1,0 +1,22 @@
+[
+  { "country": "China", "lat": 35.86, "lng": 104.19, "value": 1412 },
+  { "country": "India", "lat": 20.59, "lng": 78.96, "value": 1408 },
+  { "country": "United States", "lat": 37.09, "lng": -95.71, "value": 331 },
+  { "country": "Indonesia", "lat": -0.79, "lng": 113.92, "value": 273 },
+  { "country": "Pakistan", "lat": 30.37, "lng": 69.34, "value": 220 },
+  { "country": "Brazil", "lat": -14.23, "lng": -51.92, "value": 212 },
+  { "country": "Nigeria", "lat": 9.08, "lng": 8.67, "value": 206 },
+  { "country": "Bangladesh", "lat": 23.68, "lng": 90.35, "value": 164 },
+  { "country": "Russia", "lat": 61.52, "lng": 105.31, "value": 145 },
+  { "country": "Mexico", "lat": 23.63, "lng": -102.55, "value": 128 },
+  { "country": "Japan", "lat": 36.20, "lng": 138.25, "value": 126 },
+  { "country": "Germany", "lat": 51.16, "lng": 10.45, "value": 83 },
+  { "country": "United Kingdom", "lat": 55.37, "lng": -3.43, "value": 67 },
+  { "country": "France", "lat": 46.22, "lng": 2.21, "value": 67 },
+  { "country": "Italy", "lat": 41.87, "lng": 12.56, "value": 60 },
+  { "country": "South Africa", "lat": -30.55, "lng": 22.93, "value": 59 },
+  { "country": "South Korea", "lat": 35.90, "lng": 127.76, "value": 51 },
+  { "country": "Australia", "lat": -25.27, "lng": 133.77, "value": 25 },
+  { "country": "Canada", "lat": 56.13, "lng": -106.34, "value": 38 },
+  { "country": "Saudi Arabia", "lat": 23.88, "lng": 45.07, "value": 34 }
+]
