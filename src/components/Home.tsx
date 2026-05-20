@@ -1,6 +1,7 @@
 import { Button, useTheme } from "@huzaifah191001/design-library";
 import { useAppDispatch } from "../store/hooks";
 import { toggleTheme } from "../store/slices/themeSlice";
+import ThreeScene from "./ThreeScene";
 
 const Home = () => {
   const theme = useTheme();
@@ -22,6 +23,7 @@ const Home = () => {
       }}>
         Switch theme
       </Button>
+      <ThreeScene />
     </div>
   );
 };
