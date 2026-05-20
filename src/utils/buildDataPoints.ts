@@ -45,8 +45,13 @@ export function buildDataPoints(
         const position = latitudeLongitudeToVector3(point.lat, point.lng, radius);
         mesh.position.copy(position);
 
-        mesh.lookAt(0,0,0);
-        mesh.rotateX(Math.PI / 2);
+        // mesh.lookAt(0,0,0);
+        // mesh.rotateX(Math.PI / 2);
+        const normal = position.clone().normalize();
+        mesh.quaternion.setFromUnitVectors(
+            new THREE.Vector3(0, 1, 0),
+            normal
+        )
 
         mesh.userData = {country: point.country, value: point.value};
 

@@ -1,9 +1,13 @@
 import { useEffect } from "react";
 import * as THREE from "three";
 import { useThreeScene } from "../hooks/useThreeScene";
+import { buildGlobeBorders } from "../utils/buildGlobeBorders";
+import { buildDataPoints } from "../utils/buildDataPoints";
 
 const ThreeScene = () => {
-  const { containerRef, sceneRef, onAnimate } = useThreeScene();
+  const { containerRef, sceneRef, onAnimate } = useThreeScene({
+    cameraPosition: [0, 0, 3],
+  });
 
   useEffect(() => {
     const scene = sceneRef.current;
@@ -28,6 +32,23 @@ const ThreeScene = () => {
     const globe = new THREE.Mesh(globeGeometry, globeMaterial);
     scene.add(globe);
 
+    let borders: THREE.LineSegments | null = null;
+
+    fetch("/data/countries.geojson")
+      .then((res) => res.json())
+      .then((geojson) => {
+        borders = buildGlobeBorders(geojson, 1.001);
+        scene.add(borders);
+      });
+
+    let dataGroup : THREE.Group | null = null;
+
+    fetch("/data/population.json").then((res) => res.json())
+    .then((data)=>{
+      dataGroup = buildDataPoints(data, 1.0, 0.5);
+      scene.add(dataGroup);
+    });
+
     const wireframeGeometry = new THREE.SphereGeometry(1.002, 32, 32);
     const wireframeMaterial = new THREE.MeshBasicMaterial({
       color: 0x4488ff,
@@ -51,13 +72,34 @@ const ThreeScene = () => {
 
     onAnimate((delta) => {
       globe.rotation.y += 0.1 * delta;
+      if (borders) {
+        borders.rotation.y += 0.1 * delta;
+      }
+      if(dataGroup){
+        dataGroup.rotation.y += 0.1 * delta;
+      }
       wireframe.rotation.y += 0.1 * delta;
     });
 
     return () => {
-      scene.remove(globe, wireframe);
+      scene.remove(globe);
+      scene.remove(wireframe);
       globeGeometry.dispose();
       globeMaterial.dispose();
+      if (borders) {
+        scene.remove(borders);
+        borders.geometry.dispose();
+        (borders.material as THREE.Material).dispose();
+      }
+      if(dataGroup){
+        scene.remove(dataGroup);
+        dataGroup.traverse((point) => {
+          if(point instanceof THREE.Mesh){
+            point.geometry.dispose();
+            (point.material as THREE.Material).dispose();
+          }
+        })
+      }
       wireframeGeometry.dispose();
       wireframeMaterial.dispose();
     };
