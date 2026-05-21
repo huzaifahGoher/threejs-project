@@ -57,7 +57,7 @@ const ThreeScene = () => {
       opacity: 0.08,
     });
     const wireframe = new THREE.Mesh(wireframeGeometry, wireframeMaterial);
-    scene.add(wireframe);
+    // scene.add(wireframe);
 
     const moonGeometry = new THREE.SphereGeometry(1.002, 32, 32);
     const moonMaterial = new THREE.MeshBasicMaterial({
@@ -67,7 +67,7 @@ const ThreeScene = () => {
       opacity: 0.08,
     });
     const moon = new THREE.Mesh(moonGeometry, moonMaterial);
-    scene.add(moon);
+    // scene.add(moon);
     moon.position.set(8, 3, 5);
 
     onAnimate((delta) => {
