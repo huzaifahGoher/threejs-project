@@ -2,12 +2,12 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 interface ControlsState {
   minPopulation: number;
-  hightMultiplier: number;
+  heightMultiplier: number;
 }
 
 const initialState: ControlsState = {
   minPopulation: 0,
-  hightMultiplier: 0.5,
+  heightMultiplier: 0.5,
 };
 
 const controlsSlice = createSlice({
@@ -18,7 +18,7 @@ const controlsSlice = createSlice({
         state.minPopulation = action.payload;
     },
     setHeightMultiplier: (state, action: PayloadAction<number>)=>{
-        state.hightMultiplier = action.payload;
+        state.heightMultiplier = action.payload;
     }
   },
 });
