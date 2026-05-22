@@ -55,6 +55,7 @@ export function useThreeScene(options: UseThreeSceneOptions = {}) {
     controls.dampingFactor = dampingFactor;
     controls.minPolarAngle = Math.PI * 0.1;
     controls.maxPolarAngle = Math.PI * 0.9;
+    controls.enabled = false; // initally disabled to allow loading
     controlRef.current = controls;
 
     const resizeObserver = new ResizeObserver((entries) => {
@@ -78,6 +79,7 @@ export function useThreeScene(options: UseThreeSceneOptions = {}) {
         if(camera.position.distanceTo(targetPosition) < 0.01){
           camera.position.copy(targetPosition);
           introComplete = true;
+          controls.enabled = true;
         }
       }
 
@@ -89,12 +91,22 @@ export function useThreeScene(options: UseThreeSceneOptions = {}) {
 
     animate();
 
+    const skipIntro = () => {
+      if(!introComplete){
+        introComplete = true;
+        controls.enabled = true;
+      }
+    }
+
+    container.addEventListener("pointerdown", skipIntro);
+
     return () => {
       cancelAnimationFrame(frameIDRef.current);
       renderer.dispose();
       container.removeChild(renderer.domElement);
       controls.dispose();
       resizeObserver.disconnect();
+      container.removeEventListener("pointerdown", skipIntro);
     };
   }, []);
 
