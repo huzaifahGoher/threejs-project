@@ -32,10 +32,25 @@ export function updateDataPointTargets(
       mesh.userData.targetOpacity = 0.8;
     }
 
+    // Multi-stop gradient: green → yellow → orange → red → magenta
+    // Avoids blue (border color) for clear visibility
+    const colorStops = [
+      new THREE.Color(0x00e676), // green (low)
+      new THREE.Color(0xffeb3b), // yellow
+      new THREE.Color(0xff9800), // orange
+      new THREE.Color(0xf44336), // red
+      new THREE.Color(0xe040fb), // magenta (high)
+    ];
+
+    const segments = colorStops.length - 1;
+    const scaledT = normalized * segments;
+    const index = Math.min(Math.floor(scaledT), segments - 1);
+    const localT = scaledT - index;
+
     const color = new THREE.Color().lerpColors(
-      new THREE.Color(0x4488ff),
-      new THREE.Color(0xff4444),
-      normalized,
+      colorStops[index],
+      colorStops[index + 1],
+      localT,
     );
 
     (mesh.material as THREE.MeshBasicMaterial).color.copy(color);
