@@ -1,9 +1,11 @@
 import { configureStore } from "@reduxjs/toolkit";
 import themeReducer from "./slices/themeSlice";
+import animationReducer from "./slices/animationSlice";
 
 export const store = configureStore({
   reducer: {
-    theme: themeReducer
+    theme: themeReducer,
+    animation: animationReducer
   },
 });
 
