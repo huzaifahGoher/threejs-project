@@ -4,13 +4,15 @@ import { OrbitControls } from "three/examples/jsm/Addons.js";
 
 interface UseThreeSceneOptions {
   cameraPosition?: [number, number, number];
+  cameraStartPosition?: [number, number, number];
   enableDamping?: boolean;
   dampingFactor?: number;
 }
 
 export function useThreeScene(options: UseThreeSceneOptions = {}) {
   const {
-    cameraPosition = [0, 0, 5],
+    cameraPosition = [0, 0, 3],
+    cameraStartPosition = [0, 0, 8],
     enableDamping = true,
     dampingFactor = 0.05,
   } = options;
@@ -36,8 +38,11 @@ export function useThreeScene(options: UseThreeSceneOptions = {}) {
       0.1,
       1000,
     );
-    camera.position.set(...cameraPosition);
+    camera.position.set(...cameraStartPosition);
     cameraRef.current = camera;
+
+    let introComplete = false;
+    const targetPosition = new THREE.Vector3(...cameraPosition);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setPixelRatio(window.devicePixelRatio);
@@ -67,6 +72,15 @@ export function useThreeScene(options: UseThreeSceneOptions = {}) {
       frameIDRef.current = requestAnimationFrame(animate);
       const delta = clock.getDelta();
       controls.update();
+
+      if(!introComplete){
+        camera.position.lerp(targetPosition, 0.02);
+        if(camera.position.distanceTo(targetPosition) < 0.01){
+          camera.position.copy(targetPosition);
+          introComplete = true;
+        }
+      }
+
       if (animateCallbackFnRef.current) {
         animateCallbackFnRef.current(delta);
       }
