@@ -5,7 +5,7 @@ type initialStateType = {
 }
 
 const initialState : initialStateType = {
-    mode: "light"
+    mode: "dark"
 }
 
 
