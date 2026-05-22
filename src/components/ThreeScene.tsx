@@ -4,11 +4,19 @@ import { useThreeScene } from "../hooks/useThreeScene";
 import { buildGlobeBorders } from "../utils/buildGlobeBorders";
 import { buildDataPoints } from "../utils/buildDataPoints";
 import Tooltip from "./Tooltip";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { Button, useTheme } from "@huzaifah191001/design-library";
+import { toggleAnimation } from "../store/slices/animationSlice";
 
 const ThreeScene = () => {
+  const dispatch = useAppDispatch();
+  const theme = useTheme();
   const { containerRef, sceneRef, cameraRef, onAnimate } = useThreeScene({
     cameraPosition: [0, 0, 3],
   });
+
+  const isPlaying = useAppSelector((state) => state.animation.isPlaying);
+  const isPlayingRef = useRef(isPlaying);
 
   const [tooltip, setTooltip] = useState({
     visible: false,
@@ -84,6 +92,8 @@ const ThreeScene = () => {
     moon.position.set(8, 3, 5);
 
     onAnimate((delta) => {
+      if (!isPlayingRef.current) return;
+
       globe.rotation.y += 0.1 * delta;
       if (borders) {
         borders.rotation.y += 0.1 * delta;
@@ -117,6 +127,10 @@ const ThreeScene = () => {
       wireframeMaterial.dispose();
     };
   }, []);
+
+  useEffect(() => {
+    isPlayingRef.current = isPlaying;
+  }, [isPlaying]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -160,9 +174,25 @@ const ThreeScene = () => {
   }, []);
 
   return (
-    <div style={{position: "relative", width: "100%", height: "100vh"}}>
+    <div style={{ position: "relative", width: "100%", height: "100vh" }}>
       <div ref={containerRef} style={{ width: "100%", height: "100%" }}>
         <Tooltip {...tooltip} />
+        <Button
+          variant="filled"
+          onClick={() => dispatch(toggleAnimation())}
+          style={{
+            position: "absolute",
+            bottom: 50,
+            right: 20,
+            padding: "10px 20px",
+            background: "rgba(0,0,0,0.7)",
+            color: "#fff",
+            borderColor: theme.colors.border,
+            borderRadius: theme.borderRadius.md,
+          }}
+        >
+          {isPlaying ? "Pause" : "Play"}
+        </Button>
       </div>
     </div>
   );
