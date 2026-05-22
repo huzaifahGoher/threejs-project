@@ -13,7 +13,7 @@ import ControlPanel from "./ControlPanel";
 const ThreeScene = () => {
   const dispatch = useAppDispatch();
   const theme = useTheme();
-  const { containerRef, sceneRef, cameraRef, onAnimate } = useThreeScene({
+  const { containerRef, sceneRef, cameraRef, onAnimate, rendererRef } = useThreeScene({
     cameraPosition: [0, 0, 3],
   });
 
@@ -21,6 +21,7 @@ const ThreeScene = () => {
   const { minPopulation, heightMultiplier } = useAppSelector(
     (state) => state.control,
   );
+  const mode = useAppSelector((state) => state.theme.mode);
   const isPlayingRef = useRef(isPlaying);
   const minPopulationRef = useRef(minPopulation);
   const heightMultiplierRef = useRef(heightMultiplier);
@@ -36,6 +37,21 @@ const ThreeScene = () => {
   const dataGroupRef = useRef<THREE.Group | null>(null);
   const globeRef = useRef<THREE.Mesh | null>(null);
   const bordersRef = useRef<THREE.LineSegments | null>(null);
+
+  useEffect(() => {
+    const renderer = rendererRef.current;
+    const globe = globeRef.current;
+
+    if(!renderer || !globe) return;
+
+    if(mode === "dark"){
+      renderer.setClearColor(0x0a0a0f);
+      (globe.material as THREE.MeshStandardMaterial).color.set(0x1a1a22);
+    } else {
+      renderer.setClearColor(0xf0f0f5);
+      (globe.material as THREE.MeshStandardMaterial).color.set(0x334455);
+    }
+  }, [mode])
 
   // === SCENE SETUP (runs once) ===
   useEffect(() => {
