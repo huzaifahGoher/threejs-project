@@ -1,13 +1,24 @@
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { useThreeScene } from "../hooks/useThreeScene";
 import { buildGlobeBorders } from "../utils/buildGlobeBorders";
 import { buildDataPoints } from "../utils/buildDataPoints";
+import Tooltip from "./Tooltip";
 
 const ThreeScene = () => {
-  const { containerRef, sceneRef, onAnimate } = useThreeScene({
+  const { containerRef, sceneRef, cameraRef, onAnimate } = useThreeScene({
     cameraPosition: [0, 0, 3],
   });
+
+  const [tooltip, setTooltip] = useState({
+    visible: false,
+    x: 0,
+    y: 0,
+    country: "",
+    value: 0,
+  });
+
+  const dataGroupRef = useRef<THREE.Group | null>(null);
 
   useEffect(() => {
     const scene = sceneRef.current;
@@ -41,13 +52,15 @@ const ThreeScene = () => {
         scene.add(borders);
       });
 
-    let dataGroup : THREE.Group | null = null;
+    let dataGroup: THREE.Group | null = null;
 
-    fetch("/data/population.json").then((res) => res.json())
-    .then((data)=>{
-      dataGroup = buildDataPoints(data, 1.0, 0.5);
-      scene.add(dataGroup);
-    });
+    fetch("/data/population.json")
+      .then((res) => res.json())
+      .then((data) => {
+        dataGroup = buildDataPoints(data, 1.0, 0.5);
+        scene.add(dataGroup);
+        dataGroupRef.current = dataGroup;
+      });
 
     const wireframeGeometry = new THREE.SphereGeometry(1.002, 32, 32);
     const wireframeMaterial = new THREE.MeshBasicMaterial({
@@ -75,7 +88,7 @@ const ThreeScene = () => {
       if (borders) {
         borders.rotation.y += 0.1 * delta;
       }
-      if(dataGroup){
+      if (dataGroup) {
         dataGroup.rotation.y += 0.1 * delta;
       }
       wireframe.rotation.y += 0.1 * delta;
@@ -91,21 +104,68 @@ const ThreeScene = () => {
         borders.geometry.dispose();
         (borders.material as THREE.Material).dispose();
       }
-      if(dataGroup){
+      if (dataGroup) {
         scene.remove(dataGroup);
         dataGroup.traverse((point) => {
-          if(point instanceof THREE.Mesh){
+          if (point instanceof THREE.Mesh) {
             point.geometry.dispose();
             (point.material as THREE.Material).dispose();
           }
-        })
+        });
       }
       wireframeGeometry.dispose();
       wireframeMaterial.dispose();
     };
   }, []);
 
-  return <div ref={containerRef} style={{ width: "100%", height: "100%" }} />;
+  useEffect(() => {
+    const container = containerRef.current;
+    const camera = cameraRef.current;
+
+    if (!container || !camera) return;
+
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    const onMouseMove = (event: MouseEvent) => {
+      const dataGroup = dataGroupRef.current;
+      if (!dataGroup) return;
+
+      const rect = container.getBoundingClientRect();
+      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+
+      const intersects = raycaster.intersectObjects(dataGroup.children);
+
+      if (intersects.length > 0) {
+        const hit = intersects[0].object;
+        setTooltip({
+          visible: true,
+          x: event.clientX,
+          y: event.clientY,
+          country: hit.userData.country,
+          value: hit.userData.value,
+        });
+      } else {
+        setTooltip((prev) =>
+          prev.visible ? { ...prev, visible: false } : prev,
+        );
+      }
+    };
+
+    container.addEventListener("mousemove", onMouseMove);
+    return () => container.removeEventListener("mousemove", onMouseMove);
+  }, []);
+
+  return (
+    <div style={{position: "relative", width: "100%", height: "100vh"}}>
+      <div ref={containerRef} style={{ width: "100%", height: "100%" }}>
+        <Tooltip {...tooltip} />
+      </div>
+    </div>
+  );
 };
 
 export default ThreeScene;
