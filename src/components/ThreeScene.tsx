@@ -9,13 +9,16 @@ import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { Button, useTheme } from "@huzaifah191001/design-library";
 import { toggleAnimation } from "../store/slices/animationSlice";
 import ControlPanel from "./ControlPanel";
+import { toggleTheme } from "../store/slices/themeSlice";
+import LoadingScreen from "./LoadingScreen";
 
 const ThreeScene = () => {
   const dispatch = useAppDispatch();
   const theme = useTheme();
-  const { containerRef, sceneRef, cameraRef, onAnimate, rendererRef } = useThreeScene({
-    cameraPosition: [0, 0, 3],
-  });
+  const { containerRef, sceneRef, cameraRef, onAnimate, rendererRef } =
+    useThreeScene({
+      cameraPosition: [0, 0, 3],
+    });
 
   const isPlaying = useAppSelector((state) => state.animation.isPlaying);
   const { minPopulation, heightMultiplier } = useAppSelector(
@@ -33,6 +36,7 @@ const ThreeScene = () => {
     country: "",
     value: 0,
   });
+  const [loading, setLoading] = useState({visible: true, progress: 0});
 
   const dataGroupRef = useRef<THREE.Group | null>(null);
   const globeRef = useRef<THREE.Mesh | null>(null);
@@ -42,16 +46,16 @@ const ThreeScene = () => {
     const renderer = rendererRef.current;
     const globe = globeRef.current;
 
-    if(!renderer || !globe) return;
+    if (!renderer || !globe) return;
 
-    if(mode === "dark"){
+    if (mode === "dark") {
       renderer.setClearColor(0x0a0a0f);
       (globe.material as THREE.MeshStandardMaterial).color.set(0x1a1a22);
     } else {
       renderer.setClearColor(0xf0f0f5);
       (globe.material as THREE.MeshStandardMaterial).color.set(0x334455);
     }
-  }, [mode])
+  }, [mode]);
 
   // === SCENE SETUP (runs once) ===
   useEffect(() => {
@@ -87,6 +91,7 @@ const ThreeScene = () => {
         const borders = buildGlobeBorders(geojson, 1.001);
         scene.add(borders);
         bordersRef.current = borders;
+        setLoading((prev) => ({...prev, progress: 50}));
       });
 
     // Data points (built once, never destroyed)
@@ -102,6 +107,7 @@ const ThreeScene = () => {
           minPopulationRef.current,
           heightMultiplierRef.current,
         );
+        setLoading({visible: false, progress: 100});
       });
 
     // Animation loop
@@ -110,7 +116,8 @@ const ThreeScene = () => {
       if (isPlayingRef.current) {
         globe.rotation.y += 0.1 * delta;
         if (bordersRef.current) bordersRef.current.rotation.y += 0.1 * delta;
-        if (dataGroupRef.current) dataGroupRef.current.rotation.y += 0.1 * delta;
+        if (dataGroupRef.current)
+          dataGroupRef.current.rotation.y += 0.1 * delta;
       }
 
       // Smooth scale animation — always runs (even when paused)
@@ -214,6 +221,7 @@ const ThreeScene = () => {
 
   return (
     <div style={{ position: "relative", width: "100%", height: "100vh" }}>
+      <LoadingScreen visible={loading.visible} progress={loading.progress}/>
       <div ref={containerRef} style={{ width: "100%", height: "100%" }}>
         <Tooltip {...tooltip} />
         <ControlPanel />
@@ -232,6 +240,20 @@ const ThreeScene = () => {
           }}
         >
           {isPlaying ? "Pause" : "Play"}
+        </Button>
+        <Button
+          variant="filled"
+          style={{
+            position: "absolute",
+            top: 20,
+            right: 20,
+            color: theme.colors.textOnDanger,
+          }}
+          onClick={() => {
+            dispatch(toggleTheme());
+          }}
+        >
+          Switch theme
         </Button>
       </div>
     </div>
