@@ -71,6 +71,7 @@ export function useThreeScene(options: UseThreeSceneOptions = {}) {
     const clock = new THREE.Timer();
     const animate = () => {
       frameIDRef.current = requestAnimationFrame(animate);
+      clock.update();
       const delta = clock.getDelta();
       controls.update();
 
