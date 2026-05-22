@@ -3,10 +3,12 @@ import * as THREE from "three";
 import { useThreeScene } from "../hooks/useThreeScene";
 import { buildGlobeBorders } from "../utils/buildGlobeBorders";
 import { buildDataPoints } from "../utils/buildDataPoints";
+import { updateDataPointTargets } from "../utils/updateDataPoints";
 import Tooltip from "./Tooltip";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { Button, useTheme } from "@huzaifah191001/design-library";
 import { toggleAnimation } from "../store/slices/animationSlice";
+import ControlPanel from "./ControlPanel";
 
 const ThreeScene = () => {
   const dispatch = useAppDispatch();
@@ -16,7 +18,12 @@ const ThreeScene = () => {
   });
 
   const isPlaying = useAppSelector((state) => state.animation.isPlaying);
+  const { minPopulation, heightMultiplier } = useAppSelector(
+    (state) => state.control,
+  );
   const isPlayingRef = useRef(isPlaying);
+  const minPopulationRef = useRef(minPopulation);
+  const heightMultiplierRef = useRef(heightMultiplier);
 
   const [tooltip, setTooltip] = useState({
     visible: false,
@@ -27,11 +34,15 @@ const ThreeScene = () => {
   });
 
   const dataGroupRef = useRef<THREE.Group | null>(null);
+  const globeRef = useRef<THREE.Mesh | null>(null);
+  const bordersRef = useRef<THREE.LineSegments | null>(null);
 
+  // === SCENE SETUP (runs once) ===
   useEffect(() => {
     const scene = sceneRef.current;
     if (!scene) return;
 
+    // Lighting
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
     directionalLight.position.set(5, 3, 5);
     scene.add(directionalLight);
@@ -42,6 +53,7 @@ const ThreeScene = () => {
     const hemiSphereLight = new THREE.HemisphereLight(0x4488ff, 0x002244, 0.3);
     scene.add(hemiSphereLight);
 
+    // Globe
     const globeGeometry = new THREE.SphereGeometry(1, 64, 64);
     const globeMaterial = new THREE.MeshStandardMaterial({
       color: 0x1a1a2e,
@@ -50,88 +62,99 @@ const ThreeScene = () => {
     });
     const globe = new THREE.Mesh(globeGeometry, globeMaterial);
     scene.add(globe);
+    globeRef.current = globe;
 
-    let borders: THREE.LineSegments | null = null;
-
+    // Borders
     fetch("/data/countries.geojson")
       .then((res) => res.json())
       .then((geojson) => {
-        borders = buildGlobeBorders(geojson, 1.001);
+        const borders = buildGlobeBorders(geojson, 1.001);
         scene.add(borders);
+        bordersRef.current = borders;
       });
 
-    let dataGroup: THREE.Group | null = null;
-
+    // Data points (built once, never destroyed)
     fetch("/data/population.json")
       .then((res) => res.json())
       .then((data) => {
-        dataGroup = buildDataPoints(data, 1.0, 0.5);
+        const dataGroup = buildDataPoints(data, 1.0);
         scene.add(dataGroup);
         dataGroupRef.current = dataGroup;
+        // Set initial targets
+        updateDataPointTargets(
+          dataGroup,
+          minPopulationRef.current,
+          heightMultiplierRef.current,
+        );
       });
 
-    const wireframeGeometry = new THREE.SphereGeometry(1.002, 32, 32);
-    const wireframeMaterial = new THREE.MeshBasicMaterial({
-      color: 0x4488ff,
-      wireframe: true,
-      transparent: true,
-      opacity: 0.08,
-    });
-    const wireframe = new THREE.Mesh(wireframeGeometry, wireframeMaterial);
-    // scene.add(wireframe);
-
-    const moonGeometry = new THREE.SphereGeometry(1.002, 32, 32);
-    const moonMaterial = new THREE.MeshBasicMaterial({
-      color: 0xeeeeee,
-      wireframe: true,
-      transparent: true,
-      opacity: 0.08,
-    });
-    const moon = new THREE.Mesh(moonGeometry, moonMaterial);
-    // scene.add(moon);
-    moon.position.set(8, 3, 5);
-
+    // Animation loop
     onAnimate((delta) => {
-      if (!isPlayingRef.current) return;
+      // Rotation only when playing
+      if (isPlayingRef.current) {
+        globe.rotation.y += 0.1 * delta;
+        if (bordersRef.current) bordersRef.current.rotation.y += 0.1 * delta;
+        if (dataGroupRef.current) dataGroupRef.current.rotation.y += 0.1 * delta;
+      }
 
-      globe.rotation.y += 0.1 * delta;
-      if (borders) {
-        borders.rotation.y += 0.1 * delta;
+      // Smooth scale animation — always runs (even when paused)
+      if (dataGroupRef.current) {
+        for (const child of dataGroupRef.current.children) {
+          const mesh = child as THREE.Mesh;
+          const targetScaleY = mesh.userData.targetScaleY ?? 0.001;
+          mesh.scale.y += (targetScaleY - mesh.scale.y) * 0.1;
+
+          const targetOpacity = mesh.userData.targetOpacity ?? 0.8;
+          const mat = mesh.material as THREE.MeshBasicMaterial;
+          mat.opacity += (targetOpacity - mat.opacity) * 0.1;
+
+          // Hide completely when shrunk
+          mesh.visible = mat.opacity > 0.01;
+        }
       }
-      if (dataGroup) {
-        dataGroup.rotation.y += 0.1 * delta;
-      }
-      wireframe.rotation.y += 0.1 * delta;
     });
 
     return () => {
-      scene.remove(globe);
-      scene.remove(wireframe);
+      scene.remove(globe, directionalLight, ambientLight, hemiSphereLight);
       globeGeometry.dispose();
       globeMaterial.dispose();
-      if (borders) {
-        scene.remove(borders);
-        borders.geometry.dispose();
-        (borders.material as THREE.Material).dispose();
+      if (bordersRef.current) {
+        scene.remove(bordersRef.current);
+        bordersRef.current.geometry.dispose();
+        (bordersRef.current.material as THREE.Material).dispose();
       }
-      if (dataGroup) {
-        scene.remove(dataGroup);
-        dataGroup.traverse((point) => {
-          if (point instanceof THREE.Mesh) {
-            point.geometry.dispose();
-            (point.material as THREE.Material).dispose();
+      if (dataGroupRef.current) {
+        scene.remove(dataGroupRef.current);
+        dataGroupRef.current.traverse((child) => {
+          if (child instanceof THREE.Mesh) {
+            child.geometry.dispose();
+            (child.material as THREE.Material).dispose();
           }
         });
       }
-      wireframeGeometry.dispose();
-      wireframeMaterial.dispose();
     };
   }, []);
 
+  // === UPDATE TARGETS (reacts to slider changes, no rebuild) ===
+  useEffect(() => {
+    minPopulationRef.current = minPopulation;
+    heightMultiplierRef.current = heightMultiplier;
+
+    if (dataGroupRef.current) {
+      updateDataPointTargets(
+        dataGroupRef.current,
+        minPopulation,
+        heightMultiplier,
+      );
+    }
+  }, [minPopulation, heightMultiplier]);
+
+  // === SYNC isPlaying ref ===
   useEffect(() => {
     isPlayingRef.current = isPlaying;
   }, [isPlaying]);
 
+  // === RAYCASTING ===
   useEffect(() => {
     const container = containerRef.current;
     const camera = cameraRef.current;
@@ -177,6 +200,7 @@ const ThreeScene = () => {
     <div style={{ position: "relative", width: "100%", height: "100vh" }}>
       <div ref={containerRef} style={{ width: "100%", height: "100%" }}>
         <Tooltip {...tooltip} />
+        <ControlPanel />
         <Button
           variant="filled"
           onClick={() => dispatch(toggleAnimation())}
