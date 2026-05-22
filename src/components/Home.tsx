@@ -1,11 +1,8 @@
-import { Button, useTheme } from "@huzaifah191001/design-library";
-import { useAppDispatch } from "../store/hooks";
-import { toggleTheme } from "../store/slices/themeSlice";
+import { useTheme } from "@huzaifah191001/design-library";
 import ThreeScene from "./ThreeScene";
 
 const Home = () => {
   const theme = useTheme();
-  const disaptch = useAppDispatch();
 
   return (
     <div
@@ -16,13 +13,6 @@ const Home = () => {
         backgroundColor: theme.colors.bg,
       }}
     >
-      Minimal
-      <Button variant="filled" style={{ color: theme.colors.textOnDanger }} 
-      onClick={()=>{
-        disaptch(toggleTheme());
-      }}>
-        Switch theme
-      </Button>
       <ThreeScene />
     </div>
   );
