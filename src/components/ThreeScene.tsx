@@ -242,18 +242,27 @@ const ThreeScene = () => {
           {isPlaying ? "Pause" : "Play"}
         </Button>
         <Button
-          variant="filled"
+          title="toggle theme"
           style={{
             position: "absolute",
             top: 20,
             right: 20,
-            color: theme.colors.textOnDanger,
+            borderRadius: "25%",
+            background: theme.colors.text,
+            padding: "10px"
           }}
           onClick={() => {
             dispatch(toggleTheme());
           }}
         >
-          Switch theme
+          <img 
+            src={mode === "light" ? "/light-theme.svg" : "dark-theme.svg"}
+            alt="theme"
+            style={{
+              height: "15px",
+              width: "15px"
+            }}
+          />
         </Button>
       </div>
     </div>
